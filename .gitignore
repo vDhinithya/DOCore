@@ -1,0 +1,8 @@
+# Ignore for all sub-projects
+**/target/
+**/.mvn/
+**/.idea/
+**/*.iml
+**/*.class
+**/*.log
+.DS_Store

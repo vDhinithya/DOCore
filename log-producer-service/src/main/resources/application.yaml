@@ -1,0 +1,19 @@
+server:
+  port: 6000 # Using 8081 to avoid conflict with standard 8080 ports
+
+spring:
+  application:
+    name: log-producer-service
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      # Serializers: Strings for Keys, JSON for Values (LogEvent objects)
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+# Custom config for our application logic
+docore:
+  kafka:
+    topic: docore-logs-topic
