@@ -1,0 +1,27 @@
+server:
+  port: 6001
+
+spring:
+  application:
+    name: log-consumer-service
+
+  kafka:
+    consumer:
+      bootstrap-servers: localhost:9092
+      group-id: docore-log-consumer-group  # Identifies this listener
+      auto-offset-reset: earliest          # Read from start if we missed anything
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"  # Allows converting JSON back to Java objects
+        spring.json.value.default.type: "com.docore.consumer.entity.LogEvent"
+
+  elasticsearch:
+    uris: http://localhost:9200
+    connection-timeout: 5s
+    socket-timeout: 3s
+
+# Custom variable so we don't hardcode the topic name in Java
+docore:
+  kafka:
+    topic: docore-logs-topic
