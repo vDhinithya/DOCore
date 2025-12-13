@@ -114,6 +114,7 @@ curl -X POST http://localhost:6000/api/logs \
 ```
 ### 4. Verify Database
 Check Elasticsearch to confirm the log was saved. Open browser: `http://localhost:9200/app-log/_search`
+
 You should see: `"hits": [ { "_source": { "message": "Gateway Timeout 504" ... } } ]`
 
 ---
