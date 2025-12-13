@@ -39,15 +39,42 @@ I selected this stack to mirror industry-standard observability platforms used b
 
 ---
 
-## 🚀 Current Progress: Phase 1 (The Pipeline Core)
+## 🚀 Current Progress: Phase 2 (Ingestion & Storage)
 
-Currently, the **Data Transport Layer** is fully operational.
+The **Data Transport & Storage Layers** are fully operational. Logs now travel from API -> Kafka -> Database.
 
-### ✅ Achievements
-- [x] **Infrastructure Orchestration:** Successfully containerized the entire EEK stack (Elasticsearch, Kafka, Kibana, Zookeeper) using `docker-compose`.
+### ✅ Phase 1: Producer & Transport
+- [x] **Infrastructure Orchestration:** Successfully containerized the entire EEK stack (Elasticsearch, Kafka, Kibana, Zookeeper).
 - [x] **Log Producer Service:** Built a Spring Boot microservice acting as a log emitter.
-- [x] **Kafka Integration:** Implemented `KafkaTemplate` with custom `JsonSerializer` to handle Java POJOs.
-- [x] **Verification:** Validated that structured JSON logs (`{ "level": "INFO", "message": "..." }`) are successfully landing in the Kafka Topic `docore-logs-topic`.
+- [x] **Kafka Integration:** Implemented `KafkaTemplate` for asynchronous message dispatch.
+
+### ✅ Phase 2: Consumer & Persistence
+- [x] **Log Consumer Service:** Built a dedicated worker service using `@KafkaListener`.
+- [x] **Elasticsearch Integration:** Implemented `ElasticsearchRepository` to index logs for high-speed searching.
+- [x] **End-to-End Verification:** Validated that a `POST` request to the Producer results in a searchable document in the Elasticsearch database.
+
+---
+
+## 🧠 Engineering Challenges & Lessons Learned
+
+Building a distributed system is rarely straightforward. Here are the significant technical hurdles I overcame during Phase 2:
+
+### 1. The "Bleeding Edge" Version Conflict
+* **The Issue:** I initially set up the project using **Spring Boot 4.0.0** (Experimental). This caused severe `NoClassDefFoundError` crashes because the Spring Data Elasticsearch ecosystem has not yet caught up to this beta version.
+* **The Solution:** I refactored the project to use **Spring Boot 3.4.12 (Stable)**.
+* **The Lesson:** In infrastructure engineering, stability > novelty. Always verify library compatibility matrices before choosing a framework version.
+
+### 2. The "Language Barrier" (Serialization)
+* **The Issue:** The Consumer Service crashed with `SerializationException: No type information in headers`. Kafka transmits raw bytes, and the Consumer received the JSON but didn't know which Java Class (`LogEvent`) to map it to.
+* **The Solution:** I configured the Consumer's `application.yml` to enforce a default type mapping:
+    ```yaml
+    spring.json.value.default.type: "com.docore.consumer.entity.LogEvent"
+    ```
+* **The Lesson:** Decoupled services need strict contracts. When metadata headers are missing (e.g., from raw `curl` requests), explicit type definitions are required.
+
+### 3. Elasticsearch Security Handshake (HTTP vs HTTPS)
+* **The Issue:** The application failed to connect to the database with `[es/indices.exists] Expecting a response body`. Elasticsearch 8 defaults to "Secure Mode" (HTTPS), rejecting the application's standard HTTP connection.
+* **The Solution:** I reconfigured the Docker environment to disable `xpack.security` for the development profile, allowing seamless communication without complex certificate management during the prototyping phase.
 
 ---
 
@@ -56,7 +83,7 @@ Currently, the **Data Transport Layer** is fully operational.
 This project uses a hybrid development setup: Infrastructure runs on **WSL/Ubuntu**, while code is developed in **IntelliJ (Windows)**.
 
 ### Prerequisites
-* Docker Desktop (configured with WSL 2)
+* Docker Desktop
 * Java 21 (JDK)
 * Maven
 
@@ -69,10 +96,9 @@ docker compose up -d
 ```
 Verifying : Run `docker ps` to ensure Kafka,Zookeeper, Elasticsearch and Kibana are runnning.
 
-### 2. Run the Log  Procducer
-Navigate to the `log-producer-service` directory and run the Spring Boot application.
-* Port:6000
-* Endpoint: /api/logs
+### 2. Run the Services
+1. **Producer:** Run `LogProducerServiceApplication` (port 6000)
+2. **Consumer:** Run `LogConsuemerServiceApplicartion` (port ramdom/internal 6001).
 
 ### 3. Test the Pipeline
 Send the `POST` request to trigger a log event:
@@ -81,18 +107,22 @@ Send the `POST` request to trigger a log event:
 curl -X POST http://localhost:6000/api/logs \
      -H "Content-Type: application/json" \
      -d '{
-            "serviceName": "user-service",
-            "logLevel": "ERROR",
-            "message": "Database connection timeout",
-            "statusCode": "500"}'
+             "serviceName": "payment-service",
+             "logLevel": "CRITICAL",
+             "message": "Gateway Timeout 504",
+             "statusCode": "500"}'
 ```
----
-## 🔮 What's Next? (Phase 2)
-The logs are currently safe in the Kafka queue. The next steps focus on consumption and intelligence.
+### 4. Verify Database
+Check Elasticsearch to confirm the log was saved. Open browser: `http://localhost:9200/app-log/_search`
+You should see: `"hits": [ { "_source": { "message": "Gateway Timeout 504" ... } } ]`
 
-    1. Build Log Consumer Servie: Create a listener to consume message from the Kafka topic.
-    2. Elasticsereach Integration: Index these JSON logs into the search engine.
-    3. Kibana Dashboards: Visualize error rates and latency in real time.
+---
+## 🔮 What's Next? (Phase 3)
+The backend engine is complete. The next phase focuses on Visualization and Advanced Reliability.
+
+   1. Kibana Dashboards: Connect the UI to visualize error rates and latency.
+   2. Distributed Tracing: Implement TraceID to track requests across services.
+   3. Dead Letter Queue (DLQ): Handle "poison pill" messages without crashing the consumer.
 ---
 Author
 Dhinithya Verma
