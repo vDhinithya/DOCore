@@ -2,7 +2,7 @@
 
 ### *A Real-Time, Event-Driven Log Aggregation System*
 
-**Status:** 🚧 In Development (Phase 1 Complete)
+**Status:** 🚧 In Development (Phase 2 Complete)
 
 ## 📖 The "Why" Behind This Project
 
@@ -115,6 +115,11 @@ curl -X POST http://localhost:6000/api/logs \
 ### 4. Verify Database
 Check Elasticsearch to confirm the log was saved. Open browser: `http://localhost:9200/app-log/_search`
 You should see: `"hits": [ { "_source": { "message": "Gateway Timeout 504" ... } } ]`
+
+### 5. View the Dashboard
+Open your browser to access the Kibana Frontend:  `http://localhost:5601`
+
+![DOCore Dashboard](assets/dashboard-preview.png)
 
 ---
 ## 🔮 What's Next? (Phase 3)
