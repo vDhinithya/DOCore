@@ -1,5 +1,5 @@
 server:
-  port: 6000 # Using 8081 to avoid conflict with standard 8080 ports
+  port: 6000
 
 spring:
   application:
@@ -7,11 +7,25 @@ spring:
   kafka:
     bootstrap-servers: localhost:9092
     producer:
+      observation-enabled: true
       # Serializers: Strings for Keys, JSON for Values (LogEvent objects)
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: false
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+management:
+#  zipkin:
+#    tracing:
+#      endpoint: "http://localhost:9411/api/v2/spans" # Default
+  tracing:
+    sampling:
+      probability: 1.0
+    propagation:
+      type: "w3c,b3"
 
 # Custom config for our application logic
 docore:

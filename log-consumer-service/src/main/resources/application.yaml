@@ -6,6 +6,8 @@ spring:
     name: log-consumer-service
 
   kafka:
+    listener:
+      observation-enabled: true
     consumer:
       bootstrap-servers: localhost:9092
       group-id: docore-log-consumer-group  # Identifies this listener
@@ -21,6 +23,18 @@ spring:
     connection-timeout: 5s
     socket-timeout: 3s
 
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+management:
+#  zipkin:
+#    tracing:
+#      endpoint: "http://localhost:9411/api/v2/spans" # Default
+  tracing:
+    sampling:
+      probability: 1.0
+    propagation:
+      type: "w3c,b3"
 # Custom variable so we don't hardcode the topic name in Java
 docore:
   kafka:
