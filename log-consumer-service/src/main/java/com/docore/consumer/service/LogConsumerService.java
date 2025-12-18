@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.Headers;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -19,13 +21,16 @@ public class LogConsumerService {
 
     private static final Logger log = LoggerFactory.getLogger(LogConsumerService.class);
 
-    @KafkaListener(topics = "docore-logs-topic", groupId = "docore-log-consumer-group")
-    public void consumedLog(LogEvent logEvent, @Header Map<String, Object> headers) {
+    //@KafkaListener(topics = "docore-logs-topic", groupId = "docore-log-consumer-group")
+    //public void consumedLog(LogEvent logEvent, @Header Map<String, Object> headers) {
+    @KafkaListener(topics = "${docore.kafka.topic}", groupId = "${spring.kafka.consumer.group-id}")
+    public void consumedLog(@Payload LogEvent event, @Headers Map<String, Object> headers) {
         //System.out.println("Received Log: " + logEvent.getMessage());
         //log.info("kafka headers: {}",headers);
-        log.info("Received Log: {}",logEvent.getMessage());
+        //log.info("Received Log: {}",logEvent.getMessage());
+        log.info("Received Log: {} | TraceID: {}", event.getMessage(), headers.get("traceId"));
 
-        logRepository.save(logEvent);
+        logRepository.save(event);
     }
 
 }
