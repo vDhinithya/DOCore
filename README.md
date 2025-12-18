@@ -2,8 +2,7 @@
 
 ### *A Real-Time, Event-Driven Log Aggregation System*
 
-**Status:** 🚧 In Development (Phase 2 Complete)
-
+**Status:** 🚧 In Development (Phase 3 : Distributed Tracing & Stability)
 ## 📖 The "Why" Behind This Project
 
 During my journey of building complex microservices architectures (like my recent *Fit-Pilot* project), I encountered a significant operational bottleneck: **Observability**.
@@ -23,7 +22,7 @@ The DOCore Platform is designed to decouple log generation from log storage, ens
 ### The Pipeline (Data Flow)
 1.  **Log Generation:** Microservices produce structured logs (JSON).
 2.  **Transport Layer:** **Apache Kafka** acts as a high-speed buffer, receiving logs asynchronously.
-3.  **Ingestion & Storage (Next Phase):** A consumer service reads from Kafka and indexes data into **Elasticsearch**.
+3.  **Ingestion & Storage:** A consumer service reads from Kafka and indexes data into **Elasticsearch**.
 4.  **Visualization (Next Phase):** **Kibana** provides real-time dashboards for analysis.
 
 ---
@@ -32,16 +31,17 @@ The DOCore Platform is designed to decouple log generation from log storage, ens
 
 I selected this stack to mirror industry-standard observability platforms used by companies like Netflix and Uber.
 
-* **Core Backend:** Java 21, Spring Boot 4.0.0
+* **Core Backend:** Java 21, Spring Boot 3.4.12
 * **Message Broker:** Apache Kafka (Event Streaming) & Zookeeper
+* **Observability:** Micrometer Tracing, Brave (context propagation)
 * **Infrastructure:** Docker & Docker Compose
 * **Data Format:** JSON (Serialized via Jackson)
 
 ---
 
-## 🚀 Current Progress: Phase 2 (Ingestion & Storage)
+## 🚀 Current Progress: Phase 3 (Tracing & Reliability)
 
-The **Data Transport & Storage Layers** are fully operational. Logs now travel from API -> Kafka -> Database.
+The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka -> Database, carrying unique Trace IDs that persist across service boundaries.
 
 ### ✅ Phase 1: Producer & Transport
 - [x] **Infrastructure Orchestration:** Successfully containerized the entire EEK stack (Elasticsearch, Kafka, Kibana, Zookeeper).
@@ -53,6 +53,10 @@ The **Data Transport & Storage Layers** are fully operational. Logs now travel f
 - [x] **Elasticsearch Integration:** Implemented `ElasticsearchRepository` to index logs for high-speed searching.
 - [x] **End-to-End Verification:** Validated that a `POST` request to the Producer results in a searchable document in the Elasticsearch database.
 
+### ✅ Phase 3: Distributed Tracing & Stability
+- [x] **Context Propagation:** Implemented *Micrometer Tracing* with *Brave* bridge.
+- [x] **Trace ID Unification:** Solved "Split Trace ID" issue by enforcing W3C/B3 propagation standards.
+- [x] **Consumer Reliability:** Fixed critical listener crashes by correctly mapping Kafka headers.
 ---
 
 ## 🧠 Engineering Challenges & Lessons Learned
@@ -76,6 +80,15 @@ Building a distributed system is rarely straightforward. Here are the significan
 * **The Issue:** The application failed to connect to the database with `[es/indices.exists] Expecting a response body`. Elasticsearch 8 defaults to "Secure Mode" (HTTPS), rejecting the application's standard HTTP connection.
 * **The Solution:** I reconfigured the Docker environment to disable `xpack.security` for the development profile, allowing seamless communication without complex certificate management during the prototyping phase.
 
+### 4. The "Split Trace ID" Mystery
+* **The Issue:** Even though I added tracing dependencies, the Producer and Consumer were generating different Trace IDs for the same request. The context was being lost during the Kafka hop.
+* **The Solution:**I discovered that Spring Boot 3 defaults to W3C standards, while Brave defaults to B3. I had to explicitly configure both services to speak the same "tracing language" in `application.yaml`
+
+```yaml
+management.tracing.propagation.type: "w3c,b3"
+```
+
+* **The Lesson:** "Magic" auto-configuration often fails in distributed systems. Explicitly defining protocols (propagation types) is crucial for service interoperability.
 ---
 
 ## 💻 Getting Started (Local Setup)
@@ -94,11 +107,11 @@ The backend services are defined in `docker-compose.yml`.
 # From the project root
 docker compose up -d
 ```
-Verifying : Run `docker ps` to ensure Kafka,Zookeeper, Elasticsearch and Kibana are runnning.
+Verifying : Run `docker ps` to ensure Kafka,Zookeeper, Elasticsearch and Kibana are running.
 
 ### 2. Run the Services
 1. **Producer:** Run `LogProducerServiceApplication` (port 6000)
-2. **Consumer:** Run `LogConsuemerServiceApplicartion` (port ramdom/internal 6001).
+2. **Consumer:** Run `LogConsumerServiceApplicartion` (port random/internal 6001).
 
 ### 3. Test the Pipeline
 Send the `POST` request to trigger a log event:
@@ -112,25 +125,39 @@ curl -X POST http://localhost:6000/api/logs \
              "message": "Gateway Timeout 504",
              "statusCode": "500"}'
 ```
-### 4. Verify Database
-Check Elasticsearch to confirm the log was saved. Open browser: `http://localhost:9200/app-log/_search`
 
-You should see: `"hits": [ { "_source": { "message": "Gateway Timeout 504" ... } } ]`
+### 4. Verify Trace Propagation
+Check the Consumer logs. You should see the Trace ID (e.g., `6943cf3...`) in the brackets:
 
-### 5. View the Dashboard
+``` Plaintext
+INFO [log-consumer-service,6943cf3...,...] : Received Log: Testing Trace ID Propagation
+```
+
+### 5. Verify Database
+Check Elasticsearch to confirm the log was saved. Open browser: `http://localhost:9200/app-log/_search?pretty`
+
+You should see: `{
+  "_source" : {
+    "message" : "Testing Trace ID Propagation",
+    "timestamp" : "..."
+  }
+}`
+
+###  View the Dashboard ( till Phase: 2)
 Open your browser to access the Kibana Frontend:  `http://localhost:5601`
 
 ![DOCore Dashboard](assets/dashboard-preview.png)
 
 ---
-## 🔮 What's Next? (Phase 3)
-The backend engine is complete. The next phase focuses on Visualization and Advanced Reliability.
+## 🔮 What's Next? (Phase 4)
+The backend engine is robust. The next phase focuses on Visualization.
 
-   1. Kibana Dashboards: Connect the UI to visualize error rates and latency.
-   2. Distributed Tracing: Implement TraceID to track requests across services.
+   1. Zipkin Server: Enable the Zipkin reporter to visualize the latency graph.
+   2. Kibana Dashboard: Connect the UI to visualize error rates and latency.
    3. Dead Letter Queue (DLQ): Handle "poison pill" messages without crashing the consumer.
 ---
-Author
+Author:
+
 Dhinithya Verma
 
 Documenting my journey into Distributed Systems & Observability Engineering.
