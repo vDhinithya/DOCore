@@ -121,12 +121,10 @@ Verifying : Run `docker ps` to ensure Kafka,Zookeeper, Elasticsearch and Kibana 
 2. **Consumer:** Run `LogConsumerServiceApplicartion` (port random/internal 6001).
 
 ### 3. Test the Pipeline
-**Option A: Swagger UI (Recommended)**
-Open the interactive API documentation to send requests visually:
- `http://localhost:8001/swagger-ui/index.html`
+**Option A: Swagger UI (Recommended)** Open the interactive API documentation to send requests visually:   
+           `http://localhost:8001/swagger-ui/index.html`
 
-**Option B: Terminal (Curl)**
-Or manually send the `POST` request to trigger a log event:
+**Option B: Terminal (Curl)** Or manually send the `POST` request to trigger a log event:
 
 ```bash
 curl -X POST http://localhost:8001/api/logs \
@@ -154,6 +152,7 @@ You should see: `{
     "timestamp" : "..."
   }
 }`
+
 ---
 
 ### 📸 System Dashboards
