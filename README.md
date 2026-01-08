@@ -2,7 +2,7 @@
 
 ### *A Real-Time, Event-Driven Log Aggregation System*
 
-**Status:** 🚧 In Development (Phase 3 : Distributed Tracing & Stability)
+**Status:** 🚧 In Development (Phase 5: Resilience & Production Hardening)
 ## 📖 The "Why" Behind This Project
 
 During my journey of building complex microservices architectures (like my recent *Fit-Pilot* project), I encountered a significant operational bottleneck: **Observability**.
@@ -23,8 +23,7 @@ The DOCore Platform is designed to decouple log generation from log storage, ens
 1.  **Log Generation:** Microservices produce structured logs (JSON).
 2.  **Transport Layer:** **Apache Kafka** acts as a high-speed buffer, receiving logs asynchronously.
 3.  **Ingestion & Storage:** A consumer service reads from Kafka and indexes data into **Elasticsearch**.
-4.  **Visualization (Next Phase):** **Kibana** provides real-time dashboards for analysis.
-
+4.  **Visualization:** **Kibana** provides real-time dashboards for analysis, while **Zipkin** traces latency across services.
 ---
 
 ## 🛠️ Technology Stack
@@ -39,12 +38,14 @@ I selected this stack to mirror industry-standard observability platforms used b
 
 ---
 
-## 🚀 Current Progress: Phase 3 (Tracing & Reliability)
+## 🚀 Current Progress: Phase 4
 
-The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka -> Database, carrying unique Trace IDs that persist across service boundaries.
+The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka -> Database, carrying unique Trace IDs that persist across service boundaries. 
+This enables engineers to correlate failures, latency spikes, and system behavior across asynchronous boundaries—something traditional logging setups fail to provide.
+
 
 ### ✅ Phase 1: Producer & Transport
-- [x] **Infrastructure Orchestration:** Successfully containerized the entire EEK stack (Elasticsearch, Kafka, Kibana, Zookeeper).
+- [x] **Infrastructure Orchestration:** Successfully containerized the entire Elastic stack (Elasticsearch, Kafka, Kibana, Zookeeper).
 - [x] **Log Producer Service:** Built a Spring Boot microservice acting as a log emitter.
 - [x] **Kafka Integration:** Implemented `KafkaTemplate` for asynchronous message dispatch.
 
@@ -57,6 +58,11 @@ The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka 
 - [x] **Context Propagation:** Implemented *Micrometer Tracing* with *Brave* bridge.
 - [x] **Trace ID Unification:** Solved "Split Trace ID" issue by enforcing W3C/B3 propagation standards.
 - [x] **Consumer Reliability:** Fixed critical listener crashes by correctly mapping Kafka headers.
+
+### ✅ Phase 4: Visualization & Monitoring
+- [x] **Distributed Tracing UI:** Integrated **Zipkin** to visualize request latency and service dependencies.
+- [x] **Executive Dashboard:** Built a **Kibana** dashboard to monitor traffic volume and service health.
+- [x] **Visual Status Tracking:** Implemented "Colorful Status Codes" (200s vs 500s) to visually identify error spikes on the dashboard.
 ---
 
 ## 🧠 Engineering Challenges & Lessons Learned
@@ -143,19 +149,26 @@ You should see: `{
   }
 }`
 
-###  View the Dashboard ( till Phase: 2)
-Open your browser to access the Kibana Frontend:  `http://localhost:5601`
+### 📸 System Dashboards
+**1. The Executive Dashboard (Kibana)**
+A "Single Pane of Glass" monitoring system. The Donut Chart (right) uses **Log Enrichment** to visualize HTTP status codes, allowing engineers to instantly spot "Red" (500) error spikes.
 
-![DOCore Dashboard](assets/dashboard-preview.png)
+![DOCore Dashboard](assets/dashboard-preview-2.png)
+
+**2. Distributed Tracing (Zipkin)**
+Visualizes the lifecycle of a log request. The trace below captures the 5ms latency hop as the message travels from Producer → Kafka → Consumer.
+
+![Zipkin Tracing](assets/zipkin.png)
 
 ---
-## 🔮 What's Next? (Phase 4)
-The backend engine is robust. The next phase focuses on Visualization.
+## 🔮 What's Next? (Phase 5: Resilience)
+With the visualization layer complete, the focus shifts to production-grade reliability and "Chaos Engineering."
 
-   1. Zipkin Server: Enable the Zipkin reporter to visualize the latency graph.
-   2. Kibana Dashboard: Connect the UI to visualize error rates and latency.
-   3. Dead Letter Queue (DLQ): Handle "poison pill" messages without crashing the consumer.
+1.  **Dead Letter Queue (DLQ):** Implement a safety mechanism to catch "poison pill" messages so one bad log doesn't crash the consumer.
+2.  **Circuit Breakers (Resilience4j):** Prevent the Consumer from overwhelming Elasticsearch if the database goes down.
+3.  **Full Containerization:** Dockerize the Producer and Consumer Java applications to enable a true "1-click deploy" (`docker compose up --build`).
 ---
+
 Author:
 
 Dhinithya Verma
