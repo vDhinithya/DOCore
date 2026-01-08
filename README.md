@@ -116,14 +116,20 @@ docker compose up -d
 Verifying : Run `docker ps` to ensure Kafka,Zookeeper, Elasticsearch and Kibana are running.
 
 ### 2. Run the Services
-1. **Producer:** Run `LogProducerServiceApplication` (port 6000)
+1. **Producer:** Run `LogProducerServiceApplication` (port 8001)
+  * *Verify Health:* `http://localhost:8001/actuator/health`
 2. **Consumer:** Run `LogConsumerServiceApplicartion` (port random/internal 6001).
 
 ### 3. Test the Pipeline
-Send the `POST` request to trigger a log event:
+**Option A: Swagger UI (Recommended)**
+Open the interactive API documentation to send requests visually:
+ `http://localhost:8001/swagger-ui/index.html`
+
+**Option B: Terminal (Curl)**
+Or manually send the `POST` request to trigger a log event:
 
 ```bash
-curl -X POST http://localhost:6000/api/logs \
+curl -X POST http://localhost:8001/api/logs \
      -H "Content-Type: application/json" \
      -d '{
              "serviceName": "payment-service",
@@ -148,6 +154,7 @@ You should see: `{
     "timestamp" : "..."
   }
 }`
+---
 
 ### 📸 System Dashboards
 **1. The Executive Dashboard (Kibana)**
@@ -159,6 +166,11 @@ A "Single Pane of Glass" monitoring system. The Donut Chart (right) uses **Log E
 Visualizes the lifecycle of a log request. The trace below captures the 5ms latency hop as the message travels from Producer → Kafka → Consumer.
 
 ![Zipkin Tracing](assets/zipkin.png)
+
+**3. Interactive API Documentation (Swagger UI)**
+Auto-generated API documentation complying with OpenAPI 3.0 standards. It provides a "Try it out" interface for developers to test the ingestion pipeline without writing manual `curl` commands, ensuring strict API contract adherence.
+
+![Swagger UI](assets/swagger.png)
 
 ---
 ## 🔮 What's Next? (Phase 5: Resilience)
