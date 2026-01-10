@@ -67,7 +67,8 @@ services:
       - "9411:9411"
   # --- 6. Producer ---
   docore-producer:
-    build: ./log-producer-service      # Path to the folder with Dockerfile
+    image: dhinithya/docore-producer:v1
+    #build: ./log-producer-service
     container_name: docore-producer
     ports:
       - "8001:8001"                    # Map Host Port : Container Port
@@ -80,7 +81,8 @@ services:
       - zipkin
   # --- 7. Consumer ---
   docore-consumer:
-    build: ./log-consumer-service
+    image: dhinithya/docore-consumer:v1
+    #build: ./log-consumer-service
     container_name: docore-consumer
     ports:
       - "6001:6001"
