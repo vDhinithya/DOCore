@@ -43,6 +43,11 @@ services:
       memlock:
         soft: -1
         hard: -1
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
   # --- 4. Kibana ---
   kibana:
@@ -60,3 +65,33 @@ services:
     container_name: zipkin
     ports:
       - "9411:9411"
+  # --- 6. Producer ---
+  docore-producer:
+    build: ./log-producer-service      # Path to the folder with Dockerfile
+    container_name: docore-producer
+    ports:
+      - "8001:8001"                    # Map Host Port : Container Port
+    environment:
+      - SERVER_PORT=8001
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092         # Connect to 'kafka' container
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      - kafka
+      - zipkin
+  # --- 7. Consumer ---
+  docore-consumer:
+    build: ./log-consumer-service
+    container_name: docore-consumer
+    ports:
+      - "6001:6001"
+    environment:
+      - SERVER_PORT=6001
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS=kafka:29092
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+    depends_on:
+      kafka:
+        condition: service_started
+      elasticsearch:
+         condition: service_healthy
