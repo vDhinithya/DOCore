@@ -29,7 +29,12 @@ public class LogConsumerService {
         //log.info("kafka headers: {}",headers);
         //log.info("Received Log: {}",logEvent.getMessage());
         log.info("Received Log: {} | TraceID: {}", event.getMessage(), headers.get("traceId"));
-
+//        if ("POISON_PILL".equals(event.getMessage())) {
+//            log.error("⚠ POISON PILL DETECTED! Simulating crash...");
+//            throw new RuntimeException("Boom! This is a forced crash to test DLQ.");
+//        }
+        // --- 🧪 TEST: NON-RETRYABLE EXCEPTION ---
+//        this was to simulate what will happen if we received an invalid message
         logRepository.save(event);
     }
 

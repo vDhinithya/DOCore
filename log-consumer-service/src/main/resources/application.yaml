@@ -17,6 +17,9 @@ spring:
       properties:
         spring.json.trusted.packages: "*"  # Allows converting JSON back to Java objects
         spring.json.value.default.type: "com.docore.consumer.entity.LogEvent"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
   elasticsearch:
     uris: http://localhost:9200
