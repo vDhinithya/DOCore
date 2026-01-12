@@ -42,63 +42,6 @@ I selected this stack to mirror industry-standard observability platforms used b
 
 ---
 
-## 🚀 Current Progress: Phase 4
-
-The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka -> Database, carrying unique Trace IDs that persist across service boundaries. This enables engineers to correlate failures, latency spikes, and system behavior across asynchronous boundaries—something traditional logging setups fail to provide.
-
-### ✅ Phase 1: Producer & Transport
-- [x] **Infrastructure Orchestration:** Successfully containerized the entire Elastic stack (Elasticsearch, Kafka, Kibana, Zookeeper).
-- [x] **Log Producer Service:** Built a Spring Boot microservice acting as a log emitter.
-- [x] **Kafka Integration:** Implemented `KafkaTemplate` for asynchronous message dispatch.
-
-### ✅ Phase 2: Consumer & Persistence
-- [x] **Log Consumer Service:** Built a dedicated worker service using `@KafkaListener`.
-- [x] **Elasticsearch Integration:** Implemented `ElasticsearchRepository` to index logs for high-speed searching.
-- [x] **End-to-End Verification:** Validated that a `POST` request to the Producer results in a searchable document in the Elasticsearch database.
-
-### ✅ Phase 3: Distributed Tracing & Stability
-- [x] **Context Propagation:** Implemented *Micrometer Tracing* with *Brave* bridge.
-- [x] **Trace ID Unification:** Solved "Split Trace ID" issue by enforcing W3C/B3 propagation standards.
-- [x] **Consumer Reliability:** Fixed critical listener crashes by correctly mapping Kafka headers.
-
-### ✅ Phase 4: Visualization & Deployment
-- [x] **Distributed Tracing UI:** Integrated **Zipkin** to visualize request latency and service dependencies.
-- [x] **Executive Dashboard:** Built a **Kibana** dashboard to monitor traffic volume and service health.
-- [x] **Containerization:** Dockerized Java applications and published images to Docker Hub for 1-click deployment.
-
----
-
-## 🧠 Engineering Challenges & Lessons Learned
-
-Building a distributed system is rarely straightforward. Here are the significant technical hurdles I overcame during Phase 2:
-
-### 1. The "Bleeding Edge" Version Conflict
-* **The Issue:** I initially set up the project using **Spring Boot 4.0.0** (Experimental). This caused severe `NoClassDefFoundError` crashes because the Spring Data Elasticsearch ecosystem has not yet caught up to this beta version.
-* **The Solution:** I refactored the project to use **Spring Boot 3.4.12 (Stable)**.
-* **The Lesson:** In infrastructure engineering, stability > novelty. Always verify library compatibility matrices before choosing a framework version.
-
-### 2. The "Language Barrier" (Serialization)
-* **The Issue:** The Consumer Service crashed with `SerializationException: No type information in headers`. Kafka transmits raw bytes, and the Consumer received the JSON but didn't know which Java Class (`LogEvent`) to map it to.
-* **The Solution:** I configured the Consumer's `application.yml` to enforce a default type mapping:
-    ```yaml
-    spring.json.value.default.type: "com.docore.consumer.entity.LogEvent"
-    ```
-* **The Lesson:** Decoupled services need strict contracts. When metadata headers are missing (e.g., from raw `curl` requests), explicit type definitions are required.
-
-### 3. Elasticsearch Security Handshake (HTTP vs HTTPS)
-* **The Issue:** The application failed to connect to the database with `[es/indices.exists] Expecting a response body`. Elasticsearch 8 defaults to "Secure Mode" (HTTPS), rejecting the application's standard HTTP connection.
-* **The Solution:** I reconfigured the Docker environment to disable `xpack.security` for the development profile, allowing seamless communication without complex certificate management during the prototyping phase.
-
-### 4. The "Split Trace ID" Mystery
-* **The Issue:** Even though I added tracing dependencies, the Producer and Consumer were generating different Trace IDs for the same request. The context was being lost during the Kafka hop.
-* **The Solution:** I discovered that Spring Boot 3 defaults to W3C standards, while Brave defaults to B3. I had to explicitly configure both services to speak the same "tracing language" in `application.yaml`:
-    ```yaml
-    management.tracing.propagation.type: "w3c,b3"
-    ```
-* **The Lesson:** "Magic" auto-configuration often fails in distributed systems. Explicitly defining protocols (propagation types) is crucial for service interoperability.
-
----
-
 ## 💻 Getting Started
 
 This project supports two modes: **Production Mode** (Full Docker) and **Developer Mode** (Hybrid).
@@ -114,7 +57,7 @@ This project supports two modes: **Production Mode** (Full Docker) and **Develop
     ```bash
     docker compose up -d
     ```
-    *This pulls the pre-built images (`dhinithya/docore-producer:v1`) from Docker Hub.*
+    *This pulls the pre-built images (`dhinithya/docore-producer:v2`) from Docker Hub.*
 
 2.  **Verify Health:**
     * **Producer API:** [http://localhost:8001/swagger-ui/index.html](http://localhost:8001/swagger-ui/index.html)
@@ -153,6 +96,85 @@ This project supports two modes: **Production Mode** (Full Docker) and **Develop
 
 ---
 
+## 🚀 Current Progress: Phase 5
+
+The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka -> Database, carrying unique Trace IDs that persist across service boundaries. This enables engineers to correlate failures, latency spikes, and system behavior across asynchronous boundaries—something traditional logging setups fail to provide.
+
+### ✅ Phase 1: Producer & Transport
+- [x] **Infrastructure Orchestration:** Successfully containerized the entire Elastic stack (Elasticsearch, Kafka, Kibana, Zookeeper).
+- [x] **Log Producer Service:** Built a Spring Boot microservice acting as a log emitter.
+- [x] **Kafka Integration:** Implemented `KafkaTemplate` for asynchronous message dispatch.
+
+### ✅ Phase 2: Consumer & Persistence
+- [x] **Log Consumer Service:** Built a dedicated worker service using `@KafkaListener`.
+- [x] **Elasticsearch Integration:** Implemented `ElasticsearchRepository` to index logs for high-speed searching.
+- [x] **End-to-End Verification:** Validated that a `POST` request to the Producer results in a searchable document in the Elasticsearch database.
+
+### ✅ Phase 3: Distributed Tracing & Stability
+- [x] **Context Propagation:** Implemented *Micrometer Tracing* with *Brave* bridge.
+- [x] **Trace ID Unification:** Solved "Split Trace ID" issue by enforcing W3C/B3 propagation standards.
+- [x] **Consumer Reliability:** Fixed critical listener crashes by correctly mapping Kafka headers.
+
+### ✅ Phase 4: Visualization & Deployment
+- [x] **Distributed Tracing UI:** Integrated **Zipkin** to visualize request latency and service dependencies.
+- [x] **Executive Dashboard:** Built a **Kibana** dashboard to monitor traffic volume and service health.
+- [x] **API Documentation:** Integrated **Swagger UI** for interactive API testing and contract verification.
+- [x] **Containerization:** Dockerized Java applications and published images to Docker Hub for 1-click deployment.
+
+### ✅ Phase 5: Resilience & Observability (Part 1)
+- [x] **Dead Letter Queue (DLQ):** Implemented a safety net for "Poison Pill" messages, ensuring one bad log doesn't crash the entire pipeline.
+- [x] **Self-Healing Consumer:** Configured intelligent retry policies—transient network errors retry automatically (2x), while bad data fails fast to the DLQ.
+- [x] **Error Observability:** Built a dedicated `DlqConsumerService` that indexes failed messages into Elasticsearch (`docore-error-logs`) with full stack traces and Failure Reasons.
+- [x] **Traceability:** Enforced **Trace ID** propagation to the DLQ, ensuring errors can still be correlated to the original request in Zipkin.
+
+---
+
+## 🧠 Engineering Challenges & Lessons Learned
+
+Building a distributed system is rarely straightforward. Here are the significant technical hurdles I overcame:
+
+### 1. The "Bleeding Edge" Version Conflict
+* **The Issue:** I initially set up the project using **Spring Boot 4.0.0** (Experimental). This caused severe `NoClassDefFoundError` crashes because the Spring Data Elasticsearch ecosystem has not yet caught up to this beta version.
+* **The Solution:** I refactored the project to use **Spring Boot 3.4.12 (Stable)**.
+* **The Lesson:** In infrastructure engineering, stability > novelty. Always verify library compatibility matrices before choosing a framework version.
+
+### 2. The "Language Barrier" (Serialization)
+* **The Issue:** The Consumer Service crashed with `SerializationException: No type information in headers`. Kafka transmits raw bytes, and the Consumer received the JSON but didn't know which Java Class (`LogEvent`) to map it to.
+* **The Solution:** I configured the Consumer's `application.yml` to enforce a default type mapping:
+    ```yaml
+    spring.json.value.default.type: "com.docore.consumer.entity.LogEvent"
+    ```
+* **The Lesson:** Decoupled services need strict contracts. When metadata headers are missing (e.g., from raw `curl` requests), explicit type definitions are required.
+
+### 3. Elasticsearch Security Handshake (HTTP vs HTTPS)
+* **The Issue:** The application failed to connect to the database with `[es/indices.exists] Expecting a response body`. Elasticsearch 8 defaults to "Secure Mode" (HTTPS), rejecting the application's standard HTTP connection.
+* **The Solution:** I reconfigured the Docker environment to disable `xpack.security` for the development profile, allowing seamless communication without complex certificate management during the prototyping phase.
+
+### 4. The "Split Trace ID" Mystery
+* **The Issue:** Even though I added tracing dependencies, the Producer and Consumer were generating different Trace IDs for the same request. The context was being lost during the Kafka hop.
+* **The Solution:** I discovered that Spring Boot 3 defaults to W3C standards, while Brave defaults to B3. I had to explicitly configure both services to speak the same "tracing language" in `application.yaml`:
+    ```yaml
+    management.tracing.propagation.type: "w3c,b3"
+    ```
+* **The Lesson:** "Magic" auto-configuration often fails in distributed systems. Explicitly defining protocols (propagation types) is crucial for service interoperability.
+
+### 5. The "Dual-Role" Identity Crisis (Producer-in-Consumer)
+* **The Issue:** When the Consumer tried to move a failed message to the Dead Letter Queue (DLQ), the application crashed with `SerializationException`. The Consumer Service was configured to *read* JSON, but it didn't know how to *write* (serialize) the Java Object back into JSON when acting as a Producer for the DLQ.
+* **The Solution:** I explicitly configured the Consumer's Producer Factory in `application.yml` to use `JsonSerializer`, enabling the service to switch roles dynamically without configuration conflicts.
+* **The Lesson:** In event-driven architectures, "Consumer" is often a misnomer. Resilience patterns like DLQs turn consumers into producers, requiring a complete serialization/deserialization setup.
+
+### 6. The "Intelligent Listener" Trap (Poison Pills)
+* **The Issue:** A "Poison Pill" (malformed JSON) entered the topic. The main consumer correctly rejected it, but when the DLQ Listener tried to pick it up, it *also* crashed. The DLQ Listener was trying to be "smart" by mapping the garbage data to a `LogEvent` object, causing an infinite failure loop.
+* **The Solution:** I "dumbed down" the DLQ Listener by using the `properties` attribute in `@KafkaListener` to force `StringDeserializer`. This ensures the DLQ accepts *any* raw text—no matter how broken—without trying to parse it.
+* **The Lesson:** Error handling pipelines must be more robust than the main pipeline. When cleaning up toxic data, treat payload as raw bytes/strings, not structured objects.
+
+### 7. The "Black Hole" of Observability (Lost Context)
+* **The Issue:** We successfully implemented the DLQ, but the error logs in Elasticsearch were "orphaned." The Distributed Trace ID (Zipkin) was lost during the move to the DLQ, making it impossible to correlate a database error log back to the original user request.
+* **The Solution:** I modified the `DlqConsumerService` to manually extract the `traceId` header from the Kafka record and updated the `ErrorLog` entity to index this ID.
+* **The Lesson:** Observability isn't automatic at the edges of a system. When moving data out of the "Happy Path" (e.g., to a DLQ), you must manually carry the context (Trace IDs) across the boundary.
+
+---
+
 ## 📸 System Dashboards
 
 **1. The Executive Dashboard (Kibana)**
@@ -172,12 +194,11 @@ Auto-generated API documentation complying with OpenAPI 3.0 standards. It provid
 
 ---
 
-## 🔮 What's Next? (Phase 5: Resilience)
+## 🔮 What's Next? (Phase 5: Resilience Part 2)
 
-With the visualization and deployment layers complete, the focus shifts to production-grade reliability and "Chaos Engineering."
+With the pipeline now self-healing against bad data, the next focus is **Infrastructure Resilience**.
 
-1.  **Dead Letter Queue (DLQ):** Implement a safety mechanism to catch "poison pill" messages so one bad log doesn't crash the consumer.
-2.  **Circuit Breakers (Resilience4j):** Prevent the Consumer from overwhelming Elasticsearch if the database goes down.
+1.  **Circuit Breaker (Resilience4j):** Implement a "Fail Fast" mechanism to handle database (Elasticsearch) outages gracefully. If the DB goes down, the Consumer should stop trying immediately (open circuit) rather than hanging threads and crashing the container.
 
 ---
 
