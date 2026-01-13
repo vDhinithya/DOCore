@@ -57,7 +57,7 @@ This project supports two modes: **Production Mode** (Full Docker) and **Develop
     ```bash
     docker compose up -d
     ```
-    *This pulls the pre-built images (`dhinithya/docore-producer:v2`) from Docker Hub.*
+    *This pulls the pre-built images (`dhinithya/docore-producer`, `dhinithya/docore-consumer`) from Docker Hub.*
 
 2.  **Verify Health:**
     * **Producer API:** [http://localhost:8001/swagger-ui/index.html](http://localhost:8001/swagger-ui/index.html)
@@ -128,6 +128,11 @@ The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka 
 - [x] **Traceability:** Enforced **Trace ID** propagation to the DLQ, ensuring errors can still be correlated to the original request in Zipkin.
 - [x] **Circuit Breaker (Resilience4j):** Implemented a "Fail Fast" mechanism. If Elasticsearch goes down, the system stops trying to connect (Open Circuit) and degrades gracefully to local logging, preventing cascading failures.
 
+### ✅ Phase 6: Security & Resilience
+- [x] **API Security:** Secured the ingestion endpoint using Spring Security and API Keys (`X-API-KEY`).
+- [x] **Rate Limiting:** Implemented `Resilience4j` to throttle traffic (5 req/10s for demonstration) and return `429 Too Many Requests`.
+- [x] **Swagger Authorization:** Configured OpenAPI to support API Key authentication for easy testing.
+
 ---
 
 ## 🧠 Engineering Challenges & Lessons Learned
@@ -195,10 +200,13 @@ Auto-generated API documentation complying with OpenAPI 3.0 standards. It provid
 
 ---
 
-## 🔮 What's Next? (Phase 6)
-With Resilience complete, the next phase will focus on **Security & Optimization**.
-1.  **Security:** Implement API Keys or OAuth2 to protect the Producer endpoint.
-2.  **Optimization:** Tune Kafka consumer threads and batch sizes for higher throughput.
+## 🔮 What's Next? (Phase 7: Persistence & Cloud)
+
+With the core engine secured and resilient, the focus shifts to long-term storage and cloud scalability.
+
+1.  **Persistent Storage (MongoDB):** Integrate MongoDB to store logs permanently (replacing the current console/Elastic-only storage for raw logs), allowing for complex querying and data warehousing.
+2.  **Cloud Deployment (AWS):** Deploy the containerized stack to AWS ECS or a managed Kubernetes cluster (EKS) to test real-world latency and networking.
+3.  **CI/CD Pipeline (Jenkins):** Automate the build-test-deploy cycle so every Git push automatically updates the Docker Hub images.
 ---
 
 **Author:**
