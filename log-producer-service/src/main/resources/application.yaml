@@ -36,3 +36,11 @@ docore:
       password: "${DOCORE_ADMIN_PASSWORD}"
   kafka:
     topic: docore-logs-topic
+
+resilience4j:
+  ratelimiter:
+    instances:
+      ingestLimiter:
+        limitForPeriod: 5
+        limitRefreshPeriod: 10s
+        timeoutDuration: 0ms
