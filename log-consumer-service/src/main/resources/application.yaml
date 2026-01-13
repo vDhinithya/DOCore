@@ -42,3 +42,14 @@ management:
 docore:
   kafka:
     topic: docore-logs-topic
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      elasticBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 5               # Check the last 5 requests
+        failureRateThreshold: 50           # If 50% (2.5 failures) occur, OPEN the circuit
+        waitDurationInOpenState: 10000ms   # Wait 10 seconds before trying again
+        permittedNumberOfCallsInHalfOpenState: 3 # Allow 3 test requests to check if DB is back
+        automaticTransitionFromOpenToHalfOpenEnabled: true
