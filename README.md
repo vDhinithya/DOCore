@@ -126,6 +126,7 @@ The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka 
 - [x] **Self-Healing Consumer:** Configured intelligent retry policies—transient network errors retry automatically (2x), while bad data fails fast to the DLQ.
 - [x] **Error Observability:** Built a dedicated `DlqConsumerService` that indexes failed messages into Elasticsearch (`docore-error-logs`) with full stack traces and Failure Reasons.
 - [x] **Traceability:** Enforced **Trace ID** propagation to the DLQ, ensuring errors can still be correlated to the original request in Zipkin.
+- [x] **Circuit Breaker (Resilience4j):** Implemented a "Fail Fast" mechanism. If Elasticsearch goes down, the system stops trying to connect (Open Circuit) and degrades gracefully to local logging, preventing cascading failures.
 
 ---
 
@@ -194,12 +195,10 @@ Auto-generated API documentation complying with OpenAPI 3.0 standards. It provid
 
 ---
 
-## 🔮 What's Next? (Phase 5: Resilience Part 2)
-
-With the pipeline now self-healing against bad data, the next focus is **Infrastructure Resilience**.
-
-1.  **Circuit Breaker (Resilience4j):** Implement a "Fail Fast" mechanism to handle database (Elasticsearch) outages gracefully. If the DB goes down, the Consumer should stop trying immediately (open circuit) rather than hanging threads and crashing the container.
-
+## 🔮 What's Next? (Phase 6)
+With Resilience complete, the next phase will focus on **Security & Optimization**.
+1.  **Security:** Implement API Keys or OAuth2 to protect the Producer endpoint.
+2.  **Optimization:** Tune Kafka consumer threads and batch sizes for higher throughput.
 ---
 
 **Author:**

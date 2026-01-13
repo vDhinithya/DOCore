@@ -27,10 +27,11 @@ public class LogConsumerService {
     @KafkaListener(topics = "${docore.kafka.topic}", groupId = "${spring.kafka.consumer.group-id}")
     @CircuitBreaker(name = "elasticBreaker", fallbackMethod = "fallbackForElastic")
     public void consumedLog(@Payload LogEvent event, @Header(value = "traceId", required = false) String traceId) {
-        if(traceId != null){}
+        if (traceId != null) {
+        }
         log.info("processing log : {} | traceID : {}", event.getMessage(), traceId);
 
-            //System.out.println("Received Log: " + logEvent.getMessage());
+        //System.out.println("Received Log: " + logEvent.getMessage());
         //log.info("kafka headers: {}",headers);
         //log.info("Received Log: {}",logEvent.getMessage());
         //log.info("Received Log: {} | TraceID: {}", event.getMessage(), headers.get("traceId"));
@@ -42,7 +43,8 @@ public class LogConsumerService {
 //        this was to simulate what will happen if we received an invalid message
         logRepository.save(event);
     }
-    public void fallbackForElastic( LogEvent event, String traceId, Throwable t){
+
+    public void fallbackForElastic(LogEvent event, String traceId, Throwable t) {
         log.error("Circuit open: elsatic search is down , Cause {}", t.getMessage());
         log.warn("[Fallback] droping logs to console: {}", event);
     }
