@@ -2,7 +2,7 @@
 
 ### *A Real-Time, Event-Driven Log Aggregation System*
 
-**Status:** 🚧 In Development (Phase: Resilience & Production Hardening)
+**Status:** ✅ Production Ready (v2.0 Released)
 
 ---
 
@@ -23,9 +23,20 @@ I started this project, **DOCore**, to solve that specific pain point. My goal i
 The DOCore Platform is designed to decouple log generation from log storage, ensuring high throughput and fault tolerance.
 
 ### The Pipeline (Data Flow)
+
+```mermaid
+graph LR
+    A[Microservices] -- JSON Logs --> B(Kafka Topic)
+    B -- Async --> C{Consumer Service}
+    C -- Indexing --> D[(Elasticsearch)]
+    C -- Tracing --> E[Zipkin]
+    C -- Errors --> F[Dead Letter Queue]
+    D --> G[Kibana Dashboard]
+```
+
 1.  **Log Generation:** Microservices produce structured logs (JSON).
 2.  **Transport Layer:** **Apache Kafka** acts as a high-speed buffer, receiving logs asynchronously.
-3.  **Ingestion & Storage:** A consumer service reads from Kafka and indexes data into **Elasticsearch**.
+3.  **Ingestion & Storage:** A consumer service reads from Kafka, handles errors (DLQ), and indexes data into **Elasticsearch**.
 4.  **Visualization:** **Kibana** provides real-time dashboards for analysis, while **Zipkin** traces latency across services.
 
 ---
@@ -35,10 +46,10 @@ The DOCore Platform is designed to decouple log generation from log storage, ens
 I selected this stack to mirror industry-standard observability platforms used by companies like Netflix and Uber.
 
 * **Core Backend:** Java 21, Spring Boot 3.4.12
-* **Message Broker:** Apache Kafka (Event Streaming) & Zookeeper
-* **Observability:** Micrometer Tracing, Brave (context propagation)
-* **Infrastructure:** Docker & Docker Compose
-* **Data Format:** JSON (Serialized via Jackson)
+* **Message Broker:** Apache Kafka & Zookeeper
+* **Observability:** Micrometer Tracing, Brave, Zipkin
+* **Resilience:** Resilience4j (Circuit Breakers, Rate Limiters)
+* **DevOps:** Docker, GitHub Actions (CI/CD), Docker Hub
 
 ---
 
@@ -121,17 +132,20 @@ The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka 
 - [x] **API Documentation:** Integrated **Swagger UI** for interactive API testing and contract verification.
 - [x] **Containerization:** Dockerized Java applications and published images to Docker Hub for 1-click deployment.
 
-### ✅ Phase 5: Resilience & Observability (Part 1)
-- [x] **Dead Letter Queue (DLQ):** Implemented a safety net for "Poison Pill" messages, ensuring one bad log doesn't crash the entire pipeline.
-- [x] **Self-Healing Consumer:** Configured intelligent retry policies—transient network errors retry automatically (2x), while bad data fails fast to the DLQ.
-- [x] **Error Observability:** Built a dedicated `DlqConsumerService` that indexes failed messages into Elasticsearch (`docore-error-logs`) with full stack traces and Failure Reasons.
-- [x] **Traceability:** Enforced **Trace ID** propagation to the DLQ, ensuring errors can still be correlated to the original request in Zipkin.
-- [x] **Circuit Breaker (Resilience4j):** Implemented a "Fail Fast" mechanism. If Elasticsearch goes down, the system stops trying to connect (Open Circuit) and degrades gracefully to local logging, preventing cascading failures.
+### ✅ Phase 5: Resilience & Error Handling
+- [x] **Dead Letter Queue (DLQ):** "Poison Pill" messages are automatically routed to a separate error topic/index.
+- [x] **Circuit Breaker:** The Consumer degrades gracefully (to console logging) if Elasticsearch goes down.
+- [x] **Defensive Coding:** Strict null-safety checks to prevent consumer crashes.
 
-### ✅ Phase 6: Security & Resilience
-- [x] **API Security:** Secured the ingestion endpoint using Spring Security and API Keys (`X-API-KEY`).
-- [x] **Rate Limiting:** Implemented `Resilience4j` to throttle traffic (5 req/10s for demonstration) and return `429 Too Many Requests`.
-- [x] **Swagger Authorization:** Configured OpenAPI to support API Key authentication for easy testing.
+### ✅ Phase 6: Security & Traffic Control
+- [x] **API Security:** Secured the ingestion endpoint with `X-API-KEY`.
+- [x] **Rate Limiting:** Implemented Token Bucket algorithm (Resilience4j) to prevent DDoS/spam.
+- [x] **Swagger Auth:** Configured OpenAPI to handle secure requests.
+
+### ✅ Phase 7: DevOps & Automation
+- [x] **CI/CD Pipeline:** GitHub Actions automatically builds and pushes Docker images on every commit.
+- [x] **Docker Hub Integration:** Images are published to `dhinithya/docore-producer` and `dhinithya/docore-consumer`.
+- [x] **Multi-Module Build:** Automated Maven builds for the monorepo structure.
 
 ---
 
@@ -200,13 +214,11 @@ Auto-generated API documentation complying with OpenAPI 3.0 standards. It provid
 
 ---
 
-## 🔮 What's Next? (Phase 7: Persistence & Cloud)
+## 🔮 What's Next? (Phase 8)
 
-With the core engine secured and resilient, the focus shifts to long-term storage and cloud scalability.
-
-1.  **Persistent Storage (MongoDB):** Integrate MongoDB to store logs permanently (replacing the current console/Elastic-only storage for raw logs), allowing for complex querying and data warehousing.
-2.  **Cloud Deployment (AWS):** Deploy the containerized stack to AWS ECS or a managed Kubernetes cluster (EKS) to test real-world latency and networking.
-3.  **CI/CD Pipeline (Jenkins):** Automate the build-test-deploy cycle so every Git push automatically updates the Docker Hub images.
+1.  **Metrics:** Integrate **Prometheus & Grafana** for hardware/JVM monitoring.
+2.  **Cloud Deployment:** Deploy the stack to AWS EC2.
+3.  **Alerting:** Slack notifications for critical error spikes.
 ---
 
 **Author:**
