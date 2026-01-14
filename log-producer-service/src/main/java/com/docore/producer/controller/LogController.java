@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import java.time.LocalDateTime;
 
 @RestController
@@ -30,6 +31,7 @@ public class LogController {
         producerService.sendLog(event);
         return ResponseEntity.ok("Log sent successfully to Kafka topic!");
     }
+
     public ResponseEntity<String> rateLimitFallback(LogEvent event, RequestNotPermitted ex) {
         return ResponseEntity.status(429).body("Too many requests! Slow down man");
     }

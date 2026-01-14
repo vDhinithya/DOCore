@@ -3,7 +3,6 @@ package com.docore.consumer.service;
 import com.docore.consumer.entity.ErrorLog;
 import com.docore.consumer.repository.ErrorLogRepository;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -28,7 +27,7 @@ public class DlqConsumerService {
             @Header(KafkaHeaders.DLT_EXCEPTION_MESSAGE) String exceptionMessage,
             @Header(KafkaHeaders.DLT_EXCEPTION_STACKTRACE) String stackTrace,
             @Header(value = "traceId", required = false) String traceId
-    ){
+    ) {
         log.info("DLQ Received Failed Message. Reason: {}", exceptionMessage);
         ErrorLog errorLog = new ErrorLog(rawPayload, exceptionMessage, stackTrace, traceId);
         errorLogRepository.save(errorLog);

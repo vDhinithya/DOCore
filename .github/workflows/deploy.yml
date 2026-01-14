@@ -21,9 +21,15 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # 3. Build JARs (Skip tests to save time for now)
-      - name: Build with Maven
+      # 3a. Build Producer JAR (Go into subfolder)
+      - name: Build Producer JAR
         run: mvn clean package -DskipTests
+        working-directory: ./log-producer-service
+
+      # 3b. Build Consumer JAR (Go into subfolder)
+      - name: Build Consumer JAR
+        run: mvn clean package -DskipTests
+        working-directory: ./log-consumer-service
 
       # 4. Login to Docker Hub
       - name: Login to Docker Hub
@@ -33,7 +39,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       # 5. Build & Push Producer Image
-      - name: Build & Push Producer
+      - name: Build & Push Producer Image
         uses: docker/build-push-action@v5
         with:
           context: ./log-producer-service
@@ -41,7 +47,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/docore-producer:latest
 
       # 6. Build & Push Consumer Image
-      - name: Build & Push Consumer
+      - name: Build & Push Consumer Image
         uses: docker/build-push-action@v5
         with:
           context: ./log-consumer-service

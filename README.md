@@ -2,7 +2,7 @@
 
 ### *A Real-Time, Event-Driven Log Aggregation System*
 
-**Status:** 🚧 In Development (Phase 5: Resilience & Production Hardening)
+**Status:** 🚧 In Development (Phase: Resilience & Production Hardening)
 
 ---
 
@@ -96,7 +96,7 @@ This project supports two modes: **Production Mode** (Full Docker) and **Develop
 
 ---
 
-## 🚀 Current Progress: Phase 5
+## 🚀 Current Progress: Phase 6
 
 The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka -> Database, carrying unique Trace IDs that persist across service boundaries. This enables engineers to correlate failures, latency spikes, and system behavior across asynchronous boundaries—something traditional logging setups fail to provide.
 
