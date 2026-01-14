@@ -29,5 +29,18 @@ management:
 
 # Custom config for our application logic
 docore:
+  security:
+    api-key: "${DOCORE_API_KEY}"
+    user:
+      name: "docore-admin"
+      password: "${DOCORE_ADMIN_PASSWORD}"
   kafka:
     topic: docore-logs-topic
+
+resilience4j:
+  ratelimiter:
+    instances:
+      ingestLimiter:
+        limitForPeriod: 5
+        limitRefreshPeriod: 10s
+        timeoutDuration: 0ms

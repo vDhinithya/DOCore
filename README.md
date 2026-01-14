@@ -2,7 +2,10 @@
 
 ### *A Real-Time, Event-Driven Log Aggregation System*
 
-**Status:** 🚧 In Development (Phase 5: Resilience & Production Hardening)
+**Status:** 🚧 In Development (Phase: Resilience & Production Hardening)
+
+---
+
 ## 📖 The "Why" Behind This Project
 
 During my journey of building complex microservices architectures (like my recent *Fit-Pilot* project), I encountered a significant operational bottleneck: **Observability**.
@@ -24,6 +27,7 @@ The DOCore Platform is designed to decouple log generation from log storage, ens
 2.  **Transport Layer:** **Apache Kafka** acts as a high-speed buffer, receiving logs asynchronously.
 3.  **Ingestion & Storage:** A consumer service reads from Kafka and indexes data into **Elasticsearch**.
 4.  **Visualization:** **Kibana** provides real-time dashboards for analysis, while **Zipkin** traces latency across services.
+
 ---
 
 ## 🛠️ Technology Stack
@@ -38,11 +42,63 @@ I selected this stack to mirror industry-standard observability platforms used b
 
 ---
 
-## 🚀 Current Progress: Phase 4
+## 💻 Getting Started
 
-The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka -> Database, carrying unique Trace IDs that persist across service boundaries. 
-This enables engineers to correlate failures, latency spikes, and system behavior across asynchronous boundaries—something traditional logging setups fail to provide.
+This project supports two modes: **Production Mode** (Full Docker) and **Developer Mode** (Hybrid).
 
+### Prerequisites
+* Docker Desktop
+* *Optional (For Dev Mode only):* Java 21 JDK, Maven, IDE
+
+### 🚀 Option A: Quick Start (Production Mode)
+*Best for demos. Runs the fully packaged system (Apps + Infrastructure) using Docker Hub images.*
+
+1.  **Launch the Platform:**
+    ```bash
+    docker compose up -d
+    ```
+    *This pulls the pre-built images (`dhinithya/docore-producer`, `dhinithya/docore-consumer`) from Docker Hub.*
+
+2.  **Verify Health:**
+    * **Producer API:** [http://localhost:8001/swagger-ui/index.html](http://localhost:8001/swagger-ui/index.html)
+    * **Kibana Dashboard:** [http://localhost:5601](http://localhost:5601)
+    * **Zipkin Tracing:** [http://localhost:9411](http://localhost:9411)
+
+3.  **Test the Pipeline:**
+    Use the Swagger UI above or send a curl command:
+    ```bash
+    curl -X POST http://localhost:8001/api/logs \
+         -H "Content-Type: application/json" \
+         -d '{
+                 "serviceName": "payment-service",
+                 "logLevel": "CRITICAL",
+                 "message": "Production container test",
+                 "statusCode": "500"}'
+    ```
+
+### 🛠️ Option B: Developer Setup (Hybrid Mode)
+*Best for writing code. Runs infrastructure in Docker, but Java Apps in IntelliJ for debugging.*
+
+1.  **Launch Infrastructure Only:**
+    Use the dedicated dev compose file to start Kafka, Elastic, and Zipkin without the Java apps.
+    ```bash
+    docker compose -f docker-compose-dev.yml up -d
+    ```
+
+2.  **Run Applications Locally:**
+    * Open the project in IntelliJ IDEA.
+    * Run `LogProducerServiceApplication` (Starts on port 8001).
+    * Run `LogConsumerServiceApplication` (Starts on port 6001).
+
+3.  **Develop & Debug:**
+    * Set breakpoints in IntelliJ.
+    * The local apps automatically connect to the Dockerized infrastructure via mapped ports (`localhost:9092`, `localhost:9200`).
+
+---
+
+## 🚀 Current Progress: Phase 6
+
+The pipeline is now fully operational end-to-end. Logs travel from API -> Kafka -> Database, carrying unique Trace IDs that persist across service boundaries. This enables engineers to correlate failures, latency spikes, and system behavior across asynchronous boundaries—something traditional logging setups fail to provide.
 
 ### ✅ Phase 1: Producer & Transport
 - [x] **Infrastructure Orchestration:** Successfully containerized the entire Elastic stack (Elasticsearch, Kafka, Kibana, Zookeeper).
@@ -59,15 +115,29 @@ This enables engineers to correlate failures, latency spikes, and system behavio
 - [x] **Trace ID Unification:** Solved "Split Trace ID" issue by enforcing W3C/B3 propagation standards.
 - [x] **Consumer Reliability:** Fixed critical listener crashes by correctly mapping Kafka headers.
 
-### ✅ Phase 4: Visualization & Monitoring
+### ✅ Phase 4: Visualization & Deployment
 - [x] **Distributed Tracing UI:** Integrated **Zipkin** to visualize request latency and service dependencies.
 - [x] **Executive Dashboard:** Built a **Kibana** dashboard to monitor traffic volume and service health.
-- [x] **Visual Status Tracking:** Implemented "Colorful Status Codes" (200s vs 500s) to visually identify error spikes on the dashboard.
+- [x] **API Documentation:** Integrated **Swagger UI** for interactive API testing and contract verification.
+- [x] **Containerization:** Dockerized Java applications and published images to Docker Hub for 1-click deployment.
+
+### ✅ Phase 5: Resilience & Observability (Part 1)
+- [x] **Dead Letter Queue (DLQ):** Implemented a safety net for "Poison Pill" messages, ensuring one bad log doesn't crash the entire pipeline.
+- [x] **Self-Healing Consumer:** Configured intelligent retry policies—transient network errors retry automatically (2x), while bad data fails fast to the DLQ.
+- [x] **Error Observability:** Built a dedicated `DlqConsumerService` that indexes failed messages into Elasticsearch (`docore-error-logs`) with full stack traces and Failure Reasons.
+- [x] **Traceability:** Enforced **Trace ID** propagation to the DLQ, ensuring errors can still be correlated to the original request in Zipkin.
+- [x] **Circuit Breaker (Resilience4j):** Implemented a "Fail Fast" mechanism. If Elasticsearch goes down, the system stops trying to connect (Open Circuit) and degrades gracefully to local logging, preventing cascading failures.
+
+### ✅ Phase 6: Security & Resilience
+- [x] **API Security:** Secured the ingestion endpoint using Spring Security and API Keys (`X-API-KEY`).
+- [x] **Rate Limiting:** Implemented `Resilience4j` to throttle traffic (5 req/10s for demonstration) and return `429 Too Many Requests`.
+- [x] **Swagger Authorization:** Configured OpenAPI to support API Key authentication for easy testing.
+
 ---
 
 ## 🧠 Engineering Challenges & Lessons Learned
 
-Building a distributed system is rarely straightforward. Here are the significant technical hurdles I overcame during Phase 2:
+Building a distributed system is rarely straightforward. Here are the significant technical hurdles I overcame:
 
 ### 1. The "Bleeding Edge" Version Conflict
 * **The Issue:** I initially set up the project using **Spring Boot 4.0.0** (Experimental). This caused severe `NoClassDefFoundError` crashes because the Spring Data Elasticsearch ecosystem has not yet caught up to this beta version.
@@ -88,74 +158,31 @@ Building a distributed system is rarely straightforward. Here are the significan
 
 ### 4. The "Split Trace ID" Mystery
 * **The Issue:** Even though I added tracing dependencies, the Producer and Consumer were generating different Trace IDs for the same request. The context was being lost during the Kafka hop.
-* **The Solution:**I discovered that Spring Boot 3 defaults to W3C standards, while Brave defaults to B3. I had to explicitly configure both services to speak the same "tracing language" in `application.yaml`
-
-```yaml
-management.tracing.propagation.type: "w3c,b3"
-```
-
+* **The Solution:** I discovered that Spring Boot 3 defaults to W3C standards, while Brave defaults to B3. I had to explicitly configure both services to speak the same "tracing language" in `application.yaml`:
+    ```yaml
+    management.tracing.propagation.type: "w3c,b3"
+    ```
 * **The Lesson:** "Magic" auto-configuration often fails in distributed systems. Explicitly defining protocols (propagation types) is crucial for service interoperability.
----
 
-## 💻 Getting Started (Local Setup)
+### 5. The "Dual-Role" Identity Crisis (Producer-in-Consumer)
+* **The Issue:** When the Consumer tried to move a failed message to the Dead Letter Queue (DLQ), the application crashed with `SerializationException`. The Consumer Service was configured to *read* JSON, but it didn't know how to *write* (serialize) the Java Object back into JSON when acting as a Producer for the DLQ.
+* **The Solution:** I explicitly configured the Consumer's Producer Factory in `application.yml` to use `JsonSerializer`, enabling the service to switch roles dynamically without configuration conflicts.
+* **The Lesson:** In event-driven architectures, "Consumer" is often a misnomer. Resilience patterns like DLQs turn consumers into producers, requiring a complete serialization/deserialization setup.
 
-This project uses a hybrid development setup: Infrastructure runs on **WSL/Ubuntu**, while code is developed in **IntelliJ (Windows)**.
+### 6. The "Intelligent Listener" Trap (Poison Pills)
+* **The Issue:** A "Poison Pill" (malformed JSON) entered the topic. The main consumer correctly rejected it, but when the DLQ Listener tried to pick it up, it *also* crashed. The DLQ Listener was trying to be "smart" by mapping the garbage data to a `LogEvent` object, causing an infinite failure loop.
+* **The Solution:** I "dumbed down" the DLQ Listener by using the `properties` attribute in `@KafkaListener` to force `StringDeserializer`. This ensures the DLQ accepts *any* raw text—no matter how broken—without trying to parse it.
+* **The Lesson:** Error handling pipelines must be more robust than the main pipeline. When cleaning up toxic data, treat payload as raw bytes/strings, not structured objects.
 
-### Prerequisites
-* Docker Desktop
-* Java 21 (JDK)
-* Maven
-
-### 1. Launch Infrastructure
-The backend services are defined in `docker-compose.yml`.
-
-```bash
-# From the project root
-docker compose up -d
-```
-Verifying : Run `docker ps` to ensure Kafka,Zookeeper, Elasticsearch and Kibana are running.
-
-### 2. Run the Services
-1. **Producer:** Run `LogProducerServiceApplication` (port 8001)
-  * *Verify Health:* `http://localhost:8001/actuator/health`
-2. **Consumer:** Run `LogConsumerServiceApplicartion` (port random/internal 6001).
-
-### 3. Test the Pipeline
-**Option A: Swagger UI (Recommended)** Open the interactive API documentation to send requests visually:   
-           `http://localhost:8001/swagger-ui/index.html`
-
-**Option B: Terminal (Curl)** Or manually send the `POST` request to trigger a log event:
-
-```bash
-curl -X POST http://localhost:8001/api/logs \
-     -H "Content-Type: application/json" \
-     -d '{
-             "serviceName": "payment-service",
-             "logLevel": "CRITICAL",
-             "message": "Gateway Timeout 504",
-             "statusCode": "500"}'
-```
-
-### 4. Verify Trace Propagation
-Check the Consumer logs. You should see the Trace ID (e.g., `6943cf3...`) in the brackets:
-
-``` Plaintext
-INFO [log-consumer-service,6943cf3...,...] : Received Log: Testing Trace ID Propagation
-```
-
-### 5. Verify Database
-Check Elasticsearch to confirm the log was saved. Open browser: `http://localhost:9200/app-log/_search?pretty`
-
-You should see: `{
-  "_source" : {
-    "message" : "Testing Trace ID Propagation",
-    "timestamp" : "..."
-  }
-}`
+### 7. The "Black Hole" of Observability (Lost Context)
+* **The Issue:** We successfully implemented the DLQ, but the error logs in Elasticsearch were "orphaned." The Distributed Trace ID (Zipkin) was lost during the move to the DLQ, making it impossible to correlate a database error log back to the original user request.
+* **The Solution:** I modified the `DlqConsumerService` to manually extract the `traceId` header from the Kafka record and updated the `ErrorLog` entity to index this ID.
+* **The Lesson:** Observability isn't automatic at the edges of a system. When moving data out of the "Happy Path" (e.g., to a DLQ), you must manually carry the context (Trace IDs) across the boundary.
 
 ---
 
-### 📸 System Dashboards
+## 📸 System Dashboards
+
 **1. The Executive Dashboard (Kibana)**
 A "Single Pane of Glass" monitoring system. The Donut Chart (right) uses **Log Enrichment** to visualize HTTP status codes, allowing engineers to instantly spot "Red" (500) error spikes.
 
@@ -172,16 +199,17 @@ Auto-generated API documentation complying with OpenAPI 3.0 standards. It provid
 ![Swagger UI](assets/swagger.png)
 
 ---
-## 🔮 What's Next? (Phase 5: Resilience)
-With the visualization layer complete, the focus shifts to production-grade reliability and "Chaos Engineering."
 
-1.  **Dead Letter Queue (DLQ):** Implement a safety mechanism to catch "poison pill" messages so one bad log doesn't crash the consumer.
-2.  **Circuit Breakers (Resilience4j):** Prevent the Consumer from overwhelming Elasticsearch if the database goes down.
-3.  **Full Containerization:** Dockerize the Producer and Consumer Java applications to enable a true "1-click deploy" (`docker compose up --build`).
+## 🔮 What's Next? (Phase 7: Persistence & Cloud)
+
+With the core engine secured and resilient, the focus shifts to long-term storage and cloud scalability.
+
+1.  **Persistent Storage (MongoDB):** Integrate MongoDB to store logs permanently (replacing the current console/Elastic-only storage for raw logs), allowing for complex querying and data warehousing.
+2.  **Cloud Deployment (AWS):** Deploy the containerized stack to AWS ECS or a managed Kubernetes cluster (EKS) to test real-world latency and networking.
+3.  **CI/CD Pipeline (Jenkins):** Automate the build-test-deploy cycle so every Git push automatically updates the Docker Hub images.
 ---
 
-Author:
-
+**Author:**
 Dhinithya Verma
 
-Documenting my journey into Distributed Systems & Observability Engineering.
+*Documenting my journey into Distributed Systems & Observability Engineering.*

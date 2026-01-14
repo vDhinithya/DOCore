@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # --- 1. Zookeeper ---
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
     container_name: zookeeper
@@ -11,16 +11,14 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-  # --- 2. Apache Kafka ---
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: kafka
     ports:
-      - "9092:9092" # Exposed to Windows via localhost:9092
+      - "9092:9092" # Exposed for IntelliJ
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Listeners: 'kafka:29092' for internal Docker, 'localhost:9092' for Windows IntelliJ
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -28,12 +26,11 @@ services:
     depends_on:
       - zookeeper
 
-  # --- 3. Elasticsearch ---
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
     container_name: elasticsearch
     ports:
-      - "9200:9200"
+      - "9200:9200" # Exposed for IntelliJ
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -49,7 +46,6 @@ services:
       timeout: 10s
       retries: 5
 
-  # --- 4. Kibana ---
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.1
     container_name: kibana
@@ -59,41 +55,9 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     depends_on:
       - elasticsearch
-  # --- 5. Zipkin ---
+
   zipkin:
     image: openzipkin/zipkin
     container_name: zipkin
     ports:
       - "9411:9411"
-  # --- 6. Producer ---
-  docore-producer:
-    image: dhinithya/docore-producer:v1
-    #build: ./log-producer-service
-    container_name: docore-producer
-    ports:
-      - "8001:8001"                    # Map Host Port : Container Port
-    environment:
-      - SERVER_PORT=8001
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092         # Connect to 'kafka' container
-      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
-    depends_on:
-      - kafka
-      - zipkin
-  # --- 7. Consumer ---
-  docore-consumer:
-    image: dhinithya/docore-consumer:v1
-    #build: ./log-consumer-service
-    container_name: docore-consumer
-    ports:
-      - "6001:6001"
-    environment:
-      - SERVER_PORT=6001
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS=kafka:29092
-      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
-      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
-    depends_on:
-      kafka:
-        condition: service_started
-      elasticsearch:
-         condition: service_healthy

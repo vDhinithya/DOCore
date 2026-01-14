@@ -25,7 +25,6 @@ public class KafkaProducerService {
     public void sendLog(LogEvent event) {
         log.info("Sending log to Kafka topic '{}':{}", topicName, event.getMessage());
         kafkaTemplate.send(topicName, event);
-        // System.out.println("sent to kafka: "+ event.getMessage());
     }
 
 }
