@@ -1,8 +1,20 @@
-- uses: lowlighter/metrics@latest
-  with:
-    # Use the secret name you created in Step 2
-    token: ${{ secrets.METRICS_TOKEN }}
-    user: vDhinithya
-    template: classic
-    base: header, activity, community, repositories, metadata
-    config_timezone: Asia/Kolkata
+name: Metrics
+on:
+  # Schedule daily updates
+  schedule: [{cron: "0 0 * * *"}]
+  # (optional) Run workflow manually
+  workflow_dispatch:
+  # (optional) Run workflow when pushing on master/main
+  push: {branches: ["master", "main"]}
+
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: vDhinithya
+          template: classic
+          base: header, activity, community, repositories, metadata
+          config_timezone: Asia/Kolkata
