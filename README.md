@@ -214,6 +214,8 @@ Auto-generated API documentation complying with OpenAPI 3.0 standards. It provid
 
 ---
 
+
+
 ## 🔮 What's Next? (Phase 8)
 
 1.  **Metrics:** Integrate **Prometheus & Grafana** for hardware/JVM monitoring.
@@ -225,3 +227,5 @@ Auto-generated API documentation complying with OpenAPI 3.0 standards. It provid
 Dhinithya Verma
 
 *Documenting my journey into Distributed Systems & Observability Engineering.*
+
+![Metrics](https://github.com/vDhinithya/DOCore/blob/main/github-metrics.svg)
