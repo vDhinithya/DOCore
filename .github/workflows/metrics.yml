@@ -1,0 +1,8 @@
+- uses: lowlighter/metrics@latest
+  with:
+    # Use the secret name you created in Step 2
+    token: ${{ secrets.METRICS_TOKEN }}
+    user: vDhinithya
+    template: classic
+    base: header, activity, community, repositories, metadata
+    config_timezone: Asia/Kolkata
